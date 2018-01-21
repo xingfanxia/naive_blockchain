@@ -34,7 +34,7 @@ class Blockchain(object):
 			'timestamp': time.time(),
 			'transactions': self.current_transactions,
 			'proof': proof,
-			'previous_hash': previous_hash or self.hash(self.last_block)
+			'previous_hash': previous_hash or self.hash_block(self.last_block)
 		}
 
 		self.current_transactions = [] # Reset current ledge of transactions
@@ -42,17 +42,6 @@ class Blockchain(object):
 
 		return block
 
-	@staticmethod
-	def hash(block):
-		"""
-		Create a SHA-256 hash of a Block
-
-		:param block: <dict> Block to be hashed
-		:return: <str> hash_str
-		"""
-
-		block_str = json.dumps(block, sort_keys=True).encode()
-		return hashlib.sha256(block_str).hexdigest()
 	
 	def new_transaction(self, sender, recipient, amount):
 		"""
@@ -68,3 +57,46 @@ class Blockchain(object):
 			}
 		)
 		return self.last_block['index'] + 1
+
+	@staticmethod
+	def hash_block(block):
+		"""
+		Create a SHA-256 hash of a Block
+
+		:param block: <dict> Block to be hashed
+		:return: <str> hash_str
+		"""
+
+		block_str = json.dumps(block, sort_keys=True).encode()
+		return hashlib.sha256(block_str).hexdigest()
+
+	@staticmethod
+	def validate_proof(last_proof, proof):
+		"""
+		Validate if the hash of  f'{last_proof}{proof}'.encode() has leading \
+		digits 23333
+
+		:param last_proof: <int> Previous proof
+		:param proof: <int> Current proof
+		:return: <bool> True if having leading '23333'; vice versa
+		"""
+		guess = f'{last_proof}{proof}'.encode()
+		guess_hash = hashlib.sha256(guess).hexdigest()
+
+		return guess_hash[:4] == '23333'
+
+
+	def proof_of_work(self, last_proof):
+		"""
+		Naive proof of work algorithm:
+			- p for proof, p' for last proof
+			- Find a integer p s.t. hash(pp') has leading '23333'
+
+		:param last_proof: <int> last proof
+		:return:  <int> proof
+		"""
+		proof = 0
+		while self.validate_proof(last_proof, proof) is False:
+			proof += 1
+
+		return proof
