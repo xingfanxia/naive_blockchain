@@ -83,7 +83,7 @@ class Blockchain(object):
 		guess = f'{last_proof}{proof}'.encode()
 		guess_hash = hashlib.sha256(guess).hexdigest()
 
-		return guess_hash[:4] == '23333'
+		return guess_hash[:5] == '23333'
 
 
 	def proof_of_work(self, last_proof):
