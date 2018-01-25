@@ -20,6 +20,9 @@ node_identifier = str(uuid4()).replace('-', '')
 # Instantiate the Blockchain
 blockchain = Blockchain()
 
+@app.route("/", methods=['GET'])
+def hello():
+	return jsonify("Welcome to Naive Blockchain!")
 
 @app.route('/mine', methods=['Get'])
 def mine():
