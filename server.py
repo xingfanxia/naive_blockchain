@@ -13,7 +13,7 @@ from uuid import uuid4
 from blockchain import Blockchain
 
 app = Flask(__name__)
-
+CORS(app)
 # global unique address for node with Universally Unique Identifiers as described in RFC 4122.
 node_identifier = str(uuid4()).replace('-', '')
 
@@ -31,7 +31,7 @@ def mine():
 	# Reward for mining, sender set to '0' to indicate it's issued by
 	# the system & this node has mined a new coin
 	blockchain.new_transaction(
-		sender='0',
+		sender=blockchain.sys_issuer,
 		recipient=node_identifier,
 		amount=1
 	)
@@ -49,11 +49,10 @@ def mine():
 	}
 	return jsonify(response), 200
 
-
 @app.route('/transactions/new', methods=['POST'])
 def new_transaction():
 	payload = request.get_json()
-
+	print(payload)
 	required = ['sender', 'recipient', 'amount']
 	if not all(key in payload for key in required):
 		return "Invalid transaction data posted", 400
@@ -62,7 +61,11 @@ def new_transaction():
 	                                   payload['recipient'],
 	                                   payload['amount'])
 
-	response = {'message': f"Transaction successfully added at Block {index}"}
+	if index == -999:
+		response = {'message': f"Transaction Denied", "Error": "Sender does not have enough balance to make this transaction" }
+	else:
+		response = {'message': f"Transaction successfully added at Block {index}"}
+
 	return jsonify(response), 201
 
 
@@ -75,6 +78,26 @@ def full_chain():
 
 	return jsonify(response), 200
 
+@app.route('/balance', methods=['Get'])
+def get_balance():
+	address = request.args.get('addr')
+	balance = blockchain.wallet_balance(address)
+	response = {'message': f"Your balance is {balance}"}
+
+	return jsonify(response), 201
+
+@app.route('/save')
+def save_chain():
+	blockchain.save_chain()
+
+	response = {'message': "Successfully saved"}
+	return jsonify(response), 201
+
+@app.route('/load')
+def load_chain():
+	blockchain.load_chain()
+	response = {'message': "Successfully loaded"}
+	return jsonify(response), 201
 
 if __name__ == '__main__':
-	app.run(host='0.0.0.0', port=2333)
+	app.run(host='0.0.0.0', port=2333, debug=True)

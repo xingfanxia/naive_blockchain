@@ -3,12 +3,14 @@ blockchain of the naive_blockchain
 Created by Xingfan Xia
 @10:24 PM 01-20-2018
 '''
-import hashlib, json, time
+import hashlib, json, time, pickle, os
 
 class Blockchain(object):
 	def __init__(self):
 		self.chain = []
 		self.current_transactions = []
+		self.sys_issuer = hashlib.sha256('master'.encode()).hexdigest()
+		#'fc613b4dfd6736a7bd268c8a0e74ed0d1c04a959f59dd74ef2874983fd443fc9'
 
 		# The Genesis Block
 		self.new_block(previous_hash=1, proof=99)
@@ -50,6 +52,9 @@ class Blockchain(object):
 		:param amount: <float> amount of transaction value
 		:return: <int> index pointer to the block that holds this transaction in the chain
 		"""
+		if self.wallet_balance(sender) - amount < 0 and sender != self.sys_issuer:
+			return -999
+
 		self.current_transactions.append({
 				'sender': sender,
 				'recipient': recipient,
@@ -100,3 +105,35 @@ class Blockchain(object):
 			proof += 1
 
 		return proof
+
+	def wallet_balance(self, wallet_address):
+		"""
+		Traverse the entire chain network to calculate the balance of given wallet address
+		:param wallet_address: hash
+		:return: balance: balance of the wallet_address
+		"""
+		balance = 0
+		for block in self.chain:
+			print(wallet_address)
+			for transaction in block['transactions']:
+				if transaction['sender'] == wallet_address:
+					balance -= transaction['amount']
+				elif transaction['recipient'] == wallet_address:
+					balance += transaction['amount']
+		return balance
+
+	def save_chain(self):
+		"""
+		Save the chain as a pickle object
+		:return: None
+		"""
+		if not os.path.exists('data'):
+			os.makedirs('data')
+		pickle.dump(self.chain, open("data/chain.p", "wb"))
+
+	def load_chain(self):
+		"""
+		Load the blockchain object from a pickle object
+		:return: None
+		"""
+		self.chain = pickle.load(open("data/chain.p", "rb"))
